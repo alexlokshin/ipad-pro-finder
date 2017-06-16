@@ -53,7 +53,7 @@ function normalize(text) {
 }
 
 function processDeals() {
-    let query = 'ipad pro  -"box only" -cracked -damaged -crack -liquid -scratch -"as is"';
+    let query = 'ipad pro  -"box only" -32 -cracked -damaged -crack -liquid -scratch -"as is"';
     let functions = ['findCompletedItems', 'findItemsByKeywords'];
     async.eachSeries(functions, function (func, cb) {
         console.log();
@@ -130,7 +130,7 @@ function getItems(func, keywords, items, page, cb) {
         },
 
         itemFilter: [
-            //{name: 'FreeShippingOnly', value: true},
+            {name: 'FreeShippingOnly', value: true},
             {name: 'ListingType', value: 'AuctionWithBIN'},
             //{name: 'MaxPrice', value: '650'},
             {name: 'country', value: 'US'},
@@ -156,10 +156,12 @@ function getItems(func, keywords, items, page, cb) {
             if (error) cb([]);
             else {
                 let returnedItems = itemsResponse.searchResult.item;
-                for (var i = 0; i < returnedItems.length; i++) {
-                    items.push(returnedItems[i]);
+                if (returnedItems) {
+                    for (var i = 0; i < returnedItems.length; i++) {
+                        items.push(returnedItems[i]);
+                    }
                 }
-                if (returnedItems.length < 100) {
+                if (!returnedItems || returnedItems.length < 100) {
                     cb(items);
                 }
                 else {
