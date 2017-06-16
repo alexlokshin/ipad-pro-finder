@@ -4,6 +4,6 @@ Feed your ebay app id into `config.properties`, install dependencies `npm instal
 
 Output looks like
 ```
-9.7-32-wifi	 - 349 - iPad Pro 9.7 32Gb Rose Gold - Used - 201956606563 - 0.64
-BUCKET - $$$ - DESCRIPTION - COND - EBAY ITEM ID - DEVIATION FACTOR
+9.7-32-wifi - 349 - iPad Pro 9.7 32Gb Rose Gold - Used  - 201956606563  - 0.64
+BUCKET      - $$$ - DESCRIPTION                 - COND  - EBAY ITEM ID  - DEVIATION FACTOR
 ```
