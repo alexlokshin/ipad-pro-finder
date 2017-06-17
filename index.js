@@ -116,6 +116,18 @@ function analyzeDescription(description) {
 
 
 function getItems(func, keywords, items, page, cb) {
+    var itemFilter =  [
+        //{name: 'FreeShippingOnly', value: true},
+        {name: 'ListingType', value: 'AuctionWithBIN'},
+        //{name: 'MaxPrice', value: '650'},
+        {name: 'country', value: 'US'}
+    ];
+
+    if (func == 'findCompletedItems')
+        itemFilter = [
+            {name: 'country', value: 'US'}
+        ];
+
     let params = {
         //sandbox: true,
 
@@ -129,15 +141,7 @@ function getItems(func, keywords, items, page, cb) {
             pageNumber: page
         },
 
-        itemFilter: [
-            {name: 'FreeShippingOnly', value: true},
-            {name: 'ListingType', value: 'AuctionWithBIN'},
-            //{name: 'MaxPrice', value: '650'},
-            {name: 'country', value: 'US'},
-            //{name: 'Condition', value: 2000},
-
-        ],
-
+        itemFilter: itemFilter,
 
         sortOrder: 'StartTimeNewest'
 
@@ -161,7 +165,7 @@ function getItems(func, keywords, items, page, cb) {
                         items.push(returnedItems[i]);
                     }
                 }
-                if (!returnedItems || returnedItems.length < 100) {
+                if (!returnedItems || returnedItems.length < 100 || items.length>1000) {
                     cb(items);
                 }
                 else {
@@ -177,7 +181,9 @@ function processItems(items, cb) {
 
     var buckets = [];
     for (let i = 0; i < items.length; i++) {
-
+        //console.log(items[i]);
+        if (items[i].isMultiVariationListing=='true' || items[i].paymentMethod!='PayPal')
+            continue;
 
         let description = items[i].title.toLowerCase();
 
@@ -194,12 +200,21 @@ function processItems(items, cb) {
 
             intentClassifier.trainOnline(normalize(description), bucket);
 
+            var price = 0;
+            if (items[i].listingInfo.buyItNowAvailable=='true')
+                price = items[i].listingInfo.buyItNowPrice.amount;
+            else {
+                //console.log(items[i]);
+                price = items[i].sellingStatus.currentPrice.amount;
+            }
+
             buckets[bucket].push({
                 bucket: bucket,
                 title: items[i].title,
                 itemId: items[i].itemId,
-                price: parseFloat(items[i].listingInfo.buyItNowPrice.amount),
-                condition: items[i].condition.conditionDisplayName
+                price: parseFloat(price),
+                condition: items[i].condition.conditionDisplayName,
+                listingType: items[i].listingInfo.listingType
             });
         }
 
@@ -239,9 +254,9 @@ function processItems(items, cb) {
             bucketInfos.push(bucketInfo);
 
             for (let i = 0; i < parsedItems.length; i++) {
-                if (i === 0 || i === 1) {
+                if (i <= 3) {
                     parsedItems[i].deviation = (averagePrice - parsedItems[i].price) / averagePrice;
-                    if (parsedItems[i].deviation > 0) {
+                    if (parsedItems[i].deviation > 0 || parsedItems.length==1) {
                         bucketInfo.items.push(parsedItems[i]);
                     }
                 }
@@ -267,7 +282,7 @@ function processItems(items, cb) {
             });
 
             for (let i = 0; i < deals.length; i++) {
-                console.log('\t\t' + deals[i].price + ' - ' + deals[i].title + ' - ' + deals[i].condition + ' - ' + deals[i].itemId + ' - ' + deals[i].deviation.toFixed(2)); // intentClassifier.classify(normalize(bestDeals[i].title))
+                console.log('\t\t' + deals[i].price + ' - ' + deals[i].listingType + ' - ' + deals[i].title + ' - ' + deals[i].condition + ' - ' + deals[i].itemId + ' - ' + deals[i].deviation.toFixed(2)); // intentClassifier.classify(normalize(bestDeals[i].title))
             }
         }
     }
