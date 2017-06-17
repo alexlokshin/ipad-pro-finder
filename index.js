@@ -213,7 +213,7 @@ function processItems(items, cb) {
      console.log(sorted[i], '-', ngrams[sorted[i]]);
      }*/
 
-    let bestDeals = [];
+    let bucketInfos = [];
     for (let bucket in buckets) {
         if (buckets.hasOwnProperty(bucket)) {
             let parsedItems = buckets[bucket];
@@ -223,30 +223,53 @@ function processItems(items, cb) {
             });
 
             let averagePrice = 0;
+            let minPrice = 0;
+            let maxPrice = 0;
+
             for (let i = 0; i < parsedItems.length; i++) {
-                averagePrice += parsedItems[i].price;
+                let price = parsedItems[i].price;
+                averagePrice += price;
+                if (minPrice == 0)
+                    minPrice = price;
+                minPrice = Math.min(minPrice, price);
+                maxPrice = Math.max(maxPrice, price);
             }
             averagePrice = averagePrice / parsedItems.length;
+            let bucketInfo = {bucket: bucket, min: minPrice, max: maxPrice, avg: averagePrice, items: []};
+            bucketInfos.push(bucketInfo);
 
             for (let i = 0; i < parsedItems.length; i++) {
                 if (i === 0 || i === 1) {
                     parsedItems[i].deviation = (averagePrice - parsedItems[i].price) / averagePrice;
-                    if (parsedItems[i].deviation > 0)
-                        bestDeals.push(parsedItems[i]);
+                    if (parsedItems[i].deviation > 0) {
+                        bucketInfo.items.push(parsedItems[i]);
+                    }
                 }
             }
         }
     }
 
-    console.log();
-    console.log('Best deals:');
-
-    bestDeals.sort((a, b) => {
-        return b.deviation - a.deviation;
+    bucketInfos.sort((a, b) => {
+        return a.min - b.min;
     });
 
-    for (let i = 0; i < bestDeals.length; i++) {
-        console.log(bestDeals[i].bucket + '\t - ' + bestDeals[i].price + ' - ' + bestDeals[i].title + ' - ' + bestDeals[i].condition + ' - ' + bestDeals[i].itemId + ' - ' + bestDeals[i].deviation.toFixed(2)); // intentClassifier.classify(normalize(bestDeals[i].title))
+    console.log();
+    console.log('Best deals:');
+    for (let bucket in bucketInfos) {
+
+        var deals = bucketInfos[bucket].items;
+
+        if (deals) {
+            console.log(bucketInfos[bucket].bucket, '[' + bucketInfos[bucket].min.toFixed(2) + '-' + bucketInfos[bucket].max.toFixed(2) + '], avg = ', bucketInfos[bucket].avg.toFixed(2));
+
+            deals.sort((a, b) => {
+                return b.deviation - a.deviation;
+            });
+
+            for (let i = 0; i < deals.length; i++) {
+                console.log('\t\t' + deals[i].price + ' - ' + deals[i].title + ' - ' + deals[i].condition + ' - ' + deals[i].itemId + ' - ' + deals[i].deviation.toFixed(2)); // intentClassifier.classify(normalize(bestDeals[i].title))
+            }
+        }
     }
 
     cb();
