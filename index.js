@@ -1,5 +1,8 @@
 'use strict';
 
+
+// Dedicated to Erlich Bachman
+
 let ebay = require('ebay-api');
 let PropertiesReader = require('properties-reader');
 let properties = PropertiesReader('./config.properties');
@@ -165,11 +168,10 @@ function getItems(func, keywords, items, page, cb) {
                         items.push(returnedItems[i]);
                     }
                 }
-                if (!returnedItems || returnedItems.length < 100 || items.length>1000) {
+                if (!returnedItems || returnedItems.length < 100 || items.length>1000) { // Up to 10 pages, but that is more, than enough.
                     cb(items);
                 }
                 else {
-                    //console.log('Page', page+1, returnedItems.length);
                     getItems(func, keywords, items, page + 1, cb);
                 }
             }
