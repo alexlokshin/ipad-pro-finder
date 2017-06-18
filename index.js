@@ -183,8 +183,7 @@ function processItems(items, cb) {
 
     var buckets = [];
     for (let i = 0; i < items.length; i++) {
-        //console.log(items[i]);
-        if (items[i].isMultiVariationListing=='true' || items[i].paymentMethod!='PayPal')
+        if (items[i].isMultiVariationListing=='true' || items[i].paymentMethod!='PayPal'  || !items[i].condition || items[i].condition.conditionId=='7000')
             continue;
 
         let description = items[i].title.toLowerCase();
