@@ -51,7 +51,7 @@ lr.on('end', function () {
 
 
 function normalize(text) {
-    var value = text.toLowerCase().replace('9.7in', '97IN').replace('9.7 inch', '97IN').replace('12.9in', '129IN').replace('9.7-inch', '97IN').replace('12.9-in', '129IN').replace('12.9 inch', '129IN').replace('12.9"', '129IN').replace('9.7"', '97IN').replace('wi fi', 'wifi').replace('wi-fi', 'wifi');
+    var value = text.toLowerCase().replace('9.7in', '97in').replace('9.7 inch', '97in').replace('9.7-inch', '97in').replace('9.7"', '97in').replace('10.5in', '105in').replace('10.5 inch', '105in').replace('10.5-inch', '105in').replace('10.5"', '105in').replace('12.9in', '129in').replace('12.9-in', '129in').replace('12.9 inch', '129in').replace('12.9"', '129in').replace('wi fi', 'wifi').replace('wi-fi', 'wifi');
     return value.toLowerCase();
 }
 
@@ -85,42 +85,44 @@ function analyzeDescription(description) {
     let wireless = "";
     let screenSize = "";
 
-    if (description.indexOf('cellular') !== -1 || description.indexOf('celluar') !== -1 || description.indexOf('verizon') !== -1 || description.indexOf('t-mobile') !== -1 || description.indexOf('unlocked') !== -1 || description.indexOf('at&t') !== -1)
+    if (description.indexOf('cellular') != -1 || description.indexOf('celluar') != -1 || description.indexOf('verizon') != -1 || description.indexOf('t-mobile') != -1 || description.indexOf('unlocked') != -1 || description.indexOf('at&t') != -1)
         wireless = "cell";
-    else if (description.indexOf('wi-fi') !== -1 || description.indexOf('wifi') !== -1)
+    else if (description.indexOf('wifi') != -1)
         wireless = "wifi";
 
-    if (description.indexOf("32gb") !== -1 || description.indexOf("32 gb") !== -1)
+    if (description.indexOf("32gb") != -1 || description.indexOf("32 gb") != -1)
         capacity = 32;
-    if (description.indexOf("64gb") !== -1 || description.indexOf("64 gb") !== -1)
+    if (description.indexOf("64gb") != -1 || description.indexOf("64 gb") != -1)
         capacity = 64;
-    if (description.indexOf("128gb") !== -1 || description.indexOf("128 gb") !== -1)
+    if (description.indexOf("128gb") != -1 || description.indexOf("128 gb") != -1)
         capacity = 128;
-    if (description.indexOf("256gb") !== -1 || description.indexOf("256 gb") !== -1)
+    if (description.indexOf("256gb") != -1 || description.indexOf("256 gb") != -1)
         capacity = 256;
-    if (description.indexOf("512gb") !== -1 || description.indexOf("512 gb") !== -1)
+    if (description.indexOf("512gb") != -1 || description.indexOf("512 gb") != -1)
         capacity = 512;
 
-    if (description.indexOf("9.7") !== -1)
+    if (description.indexOf("97in") != -1)
         screenSize = "9.7";
-    if (description.indexOf("12.9") !== -1)
+    if (description.indexOf("105in") != -1)
+        screenSize = "10.5";
+    if (description.indexOf("129in") != -1)
         screenSize = "12.9";
 
-    if (description.indexOf("rose gold") !== -1)
+    if (description.indexOf("rose gold") != -1)
         color = "rose gold";
-    else if (description.indexOf("gold") !== -1)
+    else if (description.indexOf("gold") != -1)
         color = "gold";
-    else if (description.indexOf("space gray") !== -1)
+    else if (description.indexOf("space gray") != -1)
         color = "space gray";
-    else if (description.indexOf("silver") !== -1)
+    else if (description.indexOf("silver") != -1)
         color = "silver";
     return {capacity, wireless, screenSize, color};
 }
 
 
 function getItems(func, keywords, items, page, cb) {
-    var itemFilter =  [
-        //{name: 'FreeShippingOnly', value: true},
+    var itemFilter = [
+        {name: 'FreeShippingOnly', value: true},
         {name: 'ListingType', value: 'AuctionWithBIN'},
         //{name: 'MaxPrice', value: '650'},
         {name: 'country', value: 'US'}
@@ -168,7 +170,7 @@ function getItems(func, keywords, items, page, cb) {
                         items.push(returnedItems[i]);
                     }
                 }
-                if (!returnedItems || returnedItems.length < 100 || items.length>1000) { // Up to 10 pages, but that is more, than enough.
+                if (!returnedItems || returnedItems.length < 100 || items.length > 1000) { // Up to 10 pages, but that is more, than enough.
                     cb(items);
                 }
                 else {
@@ -183,15 +185,12 @@ function processItems(items, cb) {
 
     var buckets = [];
     for (let i = 0; i < items.length; i++) {
-        if (items[i].isMultiVariationListing=='true' || items[i].paymentMethod!='PayPal'  || !items[i].condition || items[i].condition.conditionId=='7000')
+        if (items[i].isMultiVariationListing == 'true' || items[i].paymentMethod != 'PayPal' || !items[i].condition || items[i].condition.conditionId == '7000')
             continue;
 
-        let description = items[i].title.toLowerCase();
+        let {capacity, wireless, screenSize, color} = analyzeDescription(normalize(items[i].title));
 
-
-        let {capacity, wireless, screenSize, color} = analyzeDescription(description);
-
-        if (screenSize !== '' && capacity > 0) {
+        if (screenSize != '' && capacity > 0) {
             if (wireless === '')
                 wireless = 'wifi';
 
@@ -199,13 +198,12 @@ function processItems(items, cb) {
             if (!buckets[bucket])
                 buckets[bucket] = [];
 
-            intentClassifier.trainOnline(normalize(description), bucket);
+            intentClassifier.trainOnline(normalize(items[i].title), bucket);
 
             var price = 0;
-            if (items[i].listingInfo.buyItNowAvailable=='true')
+            if (items[i].listingInfo.buyItNowAvailable == 'true')
                 price = items[i].listingInfo.buyItNowPrice.amount;
             else {
-                //console.log(items[i]);
                 price = items[i].sellingStatus.currentPrice.amount;
             }
 
@@ -257,7 +255,7 @@ function processItems(items, cb) {
             for (let i = 0; i < parsedItems.length; i++) {
                 if (i <= 3) {
                     parsedItems[i].deviation = (averagePrice - parsedItems[i].price) / averagePrice;
-                    if (parsedItems[i].deviation > 0 || parsedItems.length==1) {
+                    if (parsedItems[i].deviation > 0 || parsedItems.length == 1) {
                         bucketInfo.items.push(parsedItems[i]);
                     }
                 }
