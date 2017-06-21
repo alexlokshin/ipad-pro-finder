@@ -10,6 +10,7 @@ let async = require('async');
 let limdu = require('limdu');
 let LineByLineReader = require('line-by-line'),
     lr = new LineByLineReader('train_data.txt');
+let swappa = require('./swappa');
 
 var TextClassifier = limdu.classifiers.multilabel.BinaryRelevance.bind(0, {
     binaryClassifierType: limdu.classifiers.Winnow.bind(0, {retrain_count: 10})
@@ -64,10 +65,31 @@ function processDeals() {
         var items = [];
         getItems(func, query, items, 1, function (items) {
             console.log('Found a total of', items.length, 'items.');
-            processItems(items, function () {
-                console.log('Done with', func);
-                cb();
-            })
+            if (func == 'findItemsByKeywords') {
+                swappa.crawlSwappa(function (swappaItems) {
+                    console.log('Found a total of', swappaItems.length, 'Swappa items.');
+                    for (var i in swappaItems) {
+                        items.push({
+                            bucket: swappaItems[i].bucket,
+                            title: swappaItems[i].description,
+                            itemId: '',
+                            price: parseFloat(swappaItems[i].price),
+                            condition: 'Used',
+                            listingType: 'Swappa'
+                        });
+                    }
+                    processItems(items, function () {
+                        console.log('Done with', func);
+                        cb();
+                    });
+                });
+            }
+            else {
+                processItems(items, function () {
+                    console.log('Done with', func);
+                    cb();
+                });
+            }
         });
 
     }, function (err) {
@@ -185,36 +207,52 @@ function processItems(items, cb) {
 
     var buckets = [];
     for (let i = 0; i < items.length; i++) {
-        if (items[i].isMultiVariationListing == 'true' || items[i].paymentMethod != 'PayPal' || !items[i].condition || items[i].condition.conditionId == '7000')
-            continue;
-
-        let {capacity, wireless, screenSize, color} = analyzeDescription(normalize(items[i].title));
-
-        if (screenSize != '' && capacity > 0) {
-            if (wireless === '')
-                wireless = 'wifi';
-
-            let bucket = screenSize + "-" + capacity + "-" + wireless;
+        if (items[i].listingType == 'Swappa') {
+            let bucket = items[i].bucket;
             if (!buckets[bucket])
                 buckets[bucket] = [];
-
-            intentClassifier.trainOnline(normalize(items[i].title), bucket);
-
-            var price = 0;
-            if (items[i].listingInfo.buyItNowAvailable == 'true')
-                price = items[i].listingInfo.buyItNowPrice.amount;
-            else {
-                price = items[i].sellingStatus.currentPrice.amount;
-            }
-
             buckets[bucket].push({
                 bucket: bucket,
                 title: items[i].title,
                 itemId: items[i].itemId,
-                price: parseFloat(price),
-                condition: items[i].condition.conditionDisplayName,
-                listingType: items[i].listingInfo.listingType
+                price: parseFloat(items[i].price),
+                condition: items[i].condition,
+                listingType: items[i].listingType
             });
+        }
+        else {
+            if (items[i].isMultiVariationListing == 'true' || items[i].paymentMethod != 'PayPal' || !items[i].condition || items[i].condition.conditionId == '7000')
+                continue;
+
+
+            let {capacity, wireless, screenSize, color} = analyzeDescription(normalize(items[i].title));
+
+            if (screenSize != '' && capacity > 0) {
+                if (wireless === '')
+                    wireless = 'wifi';
+
+                let bucket = screenSize + "-" + capacity + "-" + wireless;
+                if (!buckets[bucket])
+                    buckets[bucket] = [];
+
+                intentClassifier.trainOnline(normalize(items[i].title), bucket);
+
+                var price = 0;
+                if (items[i].listingInfo.buyItNowAvailable == 'true')
+                    price = items[i].listingInfo.buyItNowPrice.amount;
+                else {
+                    price = items[i].sellingStatus.currentPrice.amount;
+                }
+
+                buckets[bucket].push({
+                    bucket: bucket,
+                    title: items[i].title,
+                    itemId: items[i].itemId,
+                    price: parseFloat(price),
+                    condition: items[i].condition.conditionDisplayName,
+                    listingType: items[i].listingInfo.listingType
+                });
+            }
         }
 
     }

@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.4.1",
+    "crawler": "^1.0.5",
     "ebay-api": "^1.13.1",
     "limdu": "^0.9.3",
     "line-by-line": "^0.1.5",
